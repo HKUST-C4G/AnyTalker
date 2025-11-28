@@ -53,8 +53,8 @@
 ## 📑 Todo List
 - [x] Inference code
 - [x] 1.3B Stage 1 Checkpoint (trained exclusively on single-person data)
-- [x] Benchmark for evaluate Interactivity (Release expected in a few days)
-- [x] Technical report (Coming Soon) 
+- [x] Benchmark for evaluate Interactivity 
+- [x] Technical report (Coming Soon in a few days!) 
 - [ ] 14B Model (Coming soon to the Video Rebirth Creation Platform)
 
 ## Quick Start
