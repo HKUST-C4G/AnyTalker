@@ -74,19 +74,42 @@ pip install -r requirements.txt
 pip install ninja 
 pip install flash_attn==2.8.1 --no-build-isolation
 ```
-#### 4. FFmeg installation
+#### 4. FFmpeg installation
+
+You need an FFmpeg build with x264 (libx264) support to encode H.264 videos.
+Depending on your environment, you can install it via one of the following commands:
 
 ```sh
+# Ubuntu / Debian
 apt-get install ffmpeg
 ```
 or
 ```sh
+# CentOS / RHEL
 yum install ffmpeg ffmpeg-devel
 ```
 or
 ```sh
+# Conda (no root required) 
 conda install -c conda-forge ffmpeg
 ```
+
+> ⚠️ **Note:**
+> If you install FFmpeg via conda and encounter the error `Unknown encoder 'libx264'`, or if the following command does **not** list libx264:
+> 
+> ```bash
+> ffmpeg -encoders | grep libx264
+> ```
+> you can install a specific conda-forge build that includes libx264 support:
+> 
+> ```bash
+> conda install -c conda-forge ffmpeg=7.1.0
+> ```
+> 
+> Reference: [bytedance/LatentSync#60](https://github.com/bytedance/LatentSync/issues/60)
+
+
+
 ### 🧱Model Preparation
 
 | Models        |                       Download Link                                           |    Notes                      |
