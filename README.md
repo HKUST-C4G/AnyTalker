@@ -12,9 +12,9 @@
 
 
 <a href='https://hkust-c4g.github.io/AnyTalker-homepage/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
-<!-- <a href='https://hkust-c4g.github.io/AnyTalker-homepage/'><img src='https://img.shields.io/badge/Technique-Report-red'></a> -->
 <a href='https://huggingface.co/zzz66/AnyTalker-1.3B/tree/main'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-blue'></a>
 </div>
+<!-- <a href='https://hkust-c4g.github.io/AnyTalker-homepage/'><img src='https://img.shields.io/badge/Technique-Report-red'></a> -->
 
 > **TL; DR:**  AnyTalker is an audio-driven framework for generating multi-person talking videos. It features a flexible multi-stream structure to scale identities while ensuring seamless inter-identity interactions. 
 
