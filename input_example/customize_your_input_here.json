@@ -1,0 +1,46 @@
+{
+    "1p-0":{
+        "image_path": "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/images/1p-0.png",
+        "caption": "The man stands in the dusty western street, backlit by the setting sun, and his determined gaze speaks of a rugged spirit.",
+        "enhance_caption": "The man stands in the dusty western street, backlit by the setting sun, and his determined gaze speaks of a rugged spirit.",
+        "audio_list": [
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/1p-0.wav"
+        ]
+    },
+    "2p-0":{
+        "image_path": "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/images/2p-0.png",
+        "caption": "The two people are talking to each other.",
+        "enhance_caption": "The two people are talking to each other.",
+        "audio_list": [
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-0-left.wav",
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-0-right.wav"
+        ]
+    },
+    "2p-1":{
+        "image_path": "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/images/2p-1.png",
+        "caption": "The image captures two news anchors, a man and a woman, reporting the weather in a studio. He sports a navy blue suit and a friendly smile, while she wears a red blazer, offering a warm expression, both set against a weather display featuring sun and cloud icons, with soft, even lighting highlighting their professional demeanor.",
+        "enhance_caption": "The image captures two news anchors, a man and a woman, reporting the weather in a studio. He sports a navy blue suit and a friendly smile, while she wears a red blazer, offering a warm expression, both set against a weather display featuring sun and cloud icons, with soft, even lighting highlighting their professional demeanor.",
+        "audio_list": [
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-1-left.wav",
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-1-right.wav"
+        ]
+    },
+    "2p-2":{
+        "image_path": "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/images/2p-2.png",
+       "caption": "In a rugged, sunlit desert landscape, two cowboys stand facing each other in a moment of intense conversation. The younger cowboy, dressed in a denim jacket and a red plaid shirt, looks towards the older, more weathered cowboy, who is wearing a worn denim jacket and a beige scarf. The backdrop features rolling hills and cacti, with the warm light casting natural shadows, emphasizing the Western theme. The scene conveys a serious, engaging dialogue between two distinct characters, each with unique features and expressions.",
+        "enhance_caption": "In a rugged, sunlit desert landscape, two cowboys stand facing each other in a moment of intense conversation. The younger cowboy, dressed in a denim jacket and a red plaid shirt, looks towards the older, more weathered cowboy, who is wearing a worn denim jacket and a beige scarf. The backdrop features rolling hills and cacti, with the warm light casting natural shadows, emphasizing the Western theme. The scene conveys a serious, engaging dialogue between two distinct characters, each with unique features and expressions.",
+        "audio_list": [
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-2-left.wav",
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-2-right.wav"
+        ]
+    },
+    "2p-3":{
+        "image_path": "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/images/2p-3.png",
+        "caption": "In a classic urban setting, two men stand in close conversation. One is dressed as a sharp detective in a deerstalker hat and a gray overcoat, with a focused expression, while the other is a bearded police officer, wearing a traditional blue uniform and cap, listening intently. The background features a softly blurred architectural scene with greenery, creating a calm yet serious atmosphere. The conversation appears important, highlighting the contrast in their roles and personalities.",
+        "enhance_caption": "In a classic urban setting, two men stand in close conversation. One is dressed as a sharp detective in a deerstalker hat and a gray overcoat, with a focused expression, while the other is a bearded police officer, wearing a traditional blue uniform and cap, listening intently. The background features a softly blurred architectural scene with greenery, creating a calm yet serious atmosphere. The conversation appears important, highlighting the contrast in their roles and personalities.",
+        "audio_list": [
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-3-left.wav",
+            "/nfs/zzzhong/codes/virtual_human/AnyTalker/input_example/audios/2p-3-right.wav"
+        ]
+    }
+}
