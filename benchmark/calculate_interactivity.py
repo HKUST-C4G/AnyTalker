@@ -650,7 +650,7 @@ def main():
     parser.add_argument("--ctx_id", type=int, default=1, help="GPU device ID, -1 for CPU")
     parser.add_argument("--dist", type=float, default=60.0, help="Centroid distance threshold for cross-frame matching, in pixels")
     parser.add_argument("--emb", type=float, default=0.3, help="Embedding matching cosine distance threshold (smaller is stricter)")
-    parser.add_argument("--speaker_json", type=str, default="/nfs/zzzhong/codes/virtual_human/MultiPersonBenchmark/data/speaker_duration.json", help="Speaking intervals JSON path (contains left/right intervals, in seconds)")
+    parser.add_argument("--speaker_json", type=str, default="./benchmark/speaker_duration.json", help="Speaking intervals JSON path (contains left/right intervals, in seconds)")
     parser.add_argument("--save_videos", action="store_true", help="Whether to save debug videos (cropped face + keypoint motion + merged)")
     parser.add_argument("--output_dir", type=str, default="./debug_videos", help="Debug video output directory")
     args = parser.parse_args()

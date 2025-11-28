@@ -424,10 +424,10 @@ class FaceProcessor:
 
 def main():
     parser = argparse.ArgumentParser(description='Process images to detect faces and save bbox, mask, and masked images.')
-    parser.add_argument('--input_dir', type=str, default="/nfs/zzzhong/data/bbox_test_input", help='Directory containing input images.')
-    parser.add_argument('--bbox_output_dir', type=str, default="/nfs/zzzhong/data/temp/bbox", help='Directory to save bbox npy files.')
-    parser.add_argument('--mask_output_dir', type=str, default="/nfs/zzzhong/data/temp/mask", help='Directory to save mask images.')
-    parser.add_argument('--masked_image_output_dir', type=str, default="/nfs/zzzhong/data/temp/masked_images", help='Directory to save masked images.')
+    parser.add_argument('--input_dir', type=str, default="./data/bbox_test_input", help='Directory containing input images.')
+    parser.add_argument('--bbox_output_dir', type=str, default="./temp/bbox", help='Directory to save bbox npy files.')
+    parser.add_argument('--mask_output_dir', type=str, default="./temp/mask", help='Directory to save mask images.')
+    parser.add_argument('--masked_image_output_dir', type=str, default="./temp/masked_images", help='Directory to save masked images.')
     args = parser.parse_args()
     
     # 创建输出目录

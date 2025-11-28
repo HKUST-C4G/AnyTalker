@@ -9,20 +9,7 @@ from tqdm import tqdm
 import scipy.stats
 
 jsonl_list = [
-    "/nfs/datasets/abaka-0601/batch5_53h/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/abaka-0601/batch5_125h/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/abaka-0601/batch5_145h/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/abaka-0601/batch5_98h/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/new_abaka-0505/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/abaka-0509/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/abaka-0511/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/batch3/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/batch4/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/hallo3/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/CelebV-HQ/metadata_wan_fps24.jsonl ",
-    "/nfs/datasets/batch6/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/abaka-sing-0703/metadata_wan_fps24.jsonl",
-    "/nfs/datasets/datatang/metadata_wan_fps24.jsonl"
+    "./metadata_wan_fps24.jsonl"
 ]
 
 def get_video_dimensions(video_path):

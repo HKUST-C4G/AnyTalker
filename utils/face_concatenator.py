@@ -758,8 +758,8 @@ def concatenate_faces(
 
 
 
-def random_concat_test(jsonl_path, num_pairs=100, save_dir="/nfs/zzzhong/data/temp/concat_test/videos", 
-                      base_dir="/nfs/datasets/datatang_session2"):
+def random_concat_test(jsonl_path, num_pairs=100, save_dir="./temp/concat_test/videos", 
+                      base_dir="./data"):
     """
     随机抽取视频对进行拼接测试
     
@@ -873,19 +873,19 @@ def random_concat_test(jsonl_path, num_pairs=100, save_dir="/nfs/zzzhong/data/te
 if __name__ == "__main__":
     # 原有的命令行参数处理代码保持不变
     parser = argparse.ArgumentParser(description="将两个视频的面部图像拼接成双人视频")
-    parser.add_argument("--video_path_1", type=str, default="/nfs/zzzhong/codes/virtual_human/portrait_wan_14B/data/test_data/images_w_bbox/1.mp4", help="第一个视频路径")
-    parser.add_argument("--video_path_2", type=str, default="/nfs/zzzhong/codes/virtual_human/portrait_wan_14B/data/test_data/images_w_bbox/5.mp4", help="第二个视频路径")
-    parser.add_argument("--bbox_path_1", type=str, default="/nfs/zzzhong/codes/virtual_human/portrait_wan_14B/data/test_data/images_w_bbox/1.npy", help="第一个视频bbox路径")
-    parser.add_argument("--bbox_path_2", type=str, default="/nfs/zzzhong/codes/virtual_human/portrait_wan_14B/data/test_data/images_w_bbox/5.npy", help="第二个视频bbox路径")
-    parser.add_argument("--output_path", type=str, default="/nfs/zzzhong/data/temp/concat_test/1-5.mp4", help="输出视频路径")
+    parser.add_argument("--video_path_1", type=str, default="./data/test_data/images_w_bbox/1.mp4", help="第一个视频路径")
+    parser.add_argument("--video_path_2", type=str, default="./data/test_data/images_w_bbox/5.mp4", help="第二个视频路径")
+    parser.add_argument("--bbox_path_1", type=str, default="./data/test_data/images_w_bbox/1.npy", help="第一个视频bbox路径")
+    parser.add_argument("--bbox_path_2", type=str, default="./data/test_data/images_w_bbox/5.npy", help="第二个视频bbox路径")
+    parser.add_argument("--output_path", type=str, default="./temp/concat_test/1-5.mp4", help="输出视频路径")
     parser.add_argument("--fps", type=int, default=24, help="输出视频帧率")
     parser.add_argument("--target_width", type=int, default=832, help="输出视频宽度")
     parser.add_argument("--target_height", type=int, default=480, help="输出视频高度")
     parser.add_argument("--use_efficient_save", action="store_true", help="使用高效的ffmpeg管道保存方式")
     parser.add_argument("--random_test", action="store_true", help="进行随机拼接测试")
-    parser.add_argument("--jsonl_path", type=str, default="/nfs/datasets/datatang_session2/metadata_wan_fps24.jsonl", help="jsonl文件路径")
+    parser.add_argument("--jsonl_path", type=str, default="./metadata_wan_fps24.jsonl", help="jsonl文件路径")
     parser.add_argument("--num_pairs", type=int, default=100, help="随机测试的视频对数量")
-    parser.add_argument("--save_dir", type=str, default="/nfs/zzzhong/data/temp/concat_test/videos", help="保存拼接结果的目录")
+    parser.add_argument("--save_dir", type=str, default="./temp/concat_test/videos", help="保存拼接结果的目录")
     args = parser.parse_args()
     
     if args.random_test:

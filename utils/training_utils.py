@@ -96,7 +96,7 @@ def get_distributed_sampler(dataset, args, global_rank, world_size, sp_size, dp_
     return sampler
 
 
-def load_predefined_prompt_embeddings(base_dir="/nfs/datasets/multi_person/prompt_emb_concat", text_len=512):
+def load_predefined_prompt_embeddings(base_dir="./multi_person/prompt_emb_concat", text_len=512):
     """
     加载三种预定义的prompt embeddings
     
@@ -375,7 +375,7 @@ def extract_square_faces_from_ref_images(face_parser, ref_images, video_paths, f
     return square_faces
 
 
-def save_face_parser_debug_images(ref_cropped_list, ref_image, video_paths, first_frame_faces, current_step, crop_image_size, debug_dir="/nfs/zzzhong/codes/virtual_human/portrait_wan_14B/logs/debug/ref", global_rank=0):
+def save_face_parser_debug_images(ref_cropped_list, ref_image, video_paths, first_frame_faces, current_step, crop_image_size, debug_dir="./logs/debug/ref", global_rank=0):
     """
     保存人脸解析器的调试图像到debug目录
     

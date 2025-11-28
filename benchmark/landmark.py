@@ -192,7 +192,7 @@ def main():
     extractor = LandmarkExtractor()
     
     # Process video
-    video_path = "/nfs/zzzhong/codes/virtual_human/portrait_wan_14B/data/test_data/images/male_white_01.jpg"  # Can be changed to video path
+    video_path = "xxx"  # Can be changed to video path
     output_path = "landmarks_output.mp4"
     
     if os.path.exists(video_path):
