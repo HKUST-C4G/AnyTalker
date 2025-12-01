@@ -48,11 +48,13 @@
 ## 🔥 Latest News
 🔥 *Nov 28, 2025:* We release the **AnyTalker** [weights](#), [inference code](#), and [project page](https://hkust-c4g.github.io/AnyTalker-homepage).
 
+📖 *Dec 1, 2025:* We release the [technical report](https://arxiv.org/abs/2511.23475).
+
 ## 📑 Todo List
 - [x] Inference code
 - [x] 1.3B stage 1 checkpoint (trained exclusively on single-person data)
 - [x] Benchmark for evaluate Interactivity 
-- [ ] Technical report (coming soon in a few days!) 
+- [x] Technical report 
 - [ ] 14B model (coming soon to the [Video Rebirth](https://www.videorebirth.com/)'s creation platform)
 
 ## Quick Start
