@@ -218,11 +218,14 @@ The script prints the *Interactivity* score defined in the paper.
 If you find our work useful in your research, please consider citing:
 
 ```
-@article{zhong2025anytalker,
-    title={AnyTalker: Scaling Multi-Person Talking Video Generation with Interactivity Refinement},
-    author={Zhong, Zhizhou and Ji, Yicheng and Kong, Zhe and Liu, YiYing and Wang, Jiarui and Feng, Jiasun and Liu, Lupeng and Wang, Xiangyi and Li, Yanjia and She, Yuqing and Qin, Ying and Li, Huan and Mao, Shuiyang and Liu, Wei and Luo, Wenhan},
-    journal={arXiv preprint},
-    year={2025}
+@misc{zhong2025anytalkerscalingmultipersontalking,
+      title={AnyTalker: Scaling Multi-Person Talking Video Generation with Interactivity Refinement}, 
+      author={Zhizhou Zhong and Yicheng Ji and Zhe Kong and Yiying Liu and Jiarui Wang and Jiasun Feng and Lupeng Liu and Xiangyi Wang and Yanjia Li and Yuqing She and Ying Qin and Huan Li and Shuiyang Mao and Wei Liu and Wenhan Luo},
+      year={2025},
+      eprint={2511.23475},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2511.23475}, 
 }
 ```
 
