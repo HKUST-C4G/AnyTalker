@@ -187,7 +187,7 @@ sh infer_a2v_1_3B_batch.sh
 ### Gradio Demo
 You can customize your inputs and parameters via the web interface by running the following command:
 ```sh
-python3 app.py
+python app.py
 ```
 <p align="center">
   <img src="assets/gradio.png"><br>
