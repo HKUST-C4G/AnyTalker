@@ -591,16 +591,17 @@ def run_graio_demo(args):
                 gr.Markdown("""
                 ### Example Cases
                 
-                *Note: Generation time (tested on NVIDIA H200 GPU) may vary depending on GPU specifications and system load.*
+                *Note: Generation time (tested on NVIDIA H200 GPU with 40 denoising steps) may vary depending on GPU specifications and system load.*
                 """)
                 
-                # 隐藏的文本组件用于在 Examples 表格中显示生成耗时
-                generation_time_display = gr.Textbox(label="Generation Time (H200 GPU)", visible=True, interactive=False)
+                # 文本组件用于在 Examples 表格中显示生成耗时（放在第二列）
+                generation_time_display = gr.Textbox(label="Generation Time (H200 GPU, 40 steps)", visible=True, interactive=False)
                 
                 # 创建一个函数来处理 examples 选择，同时更新音频输入框的可见性
-                def handle_example_select(image, prompt, person_num, audio_mode, audio1, audio2, audio3, gen_time):
+                def handle_example_select(image, gen_time, prompt, person_num, audio_mode, audio1, audio2, audio3):
                     # 三个音频输入框始终可见，只返回值，不改变可见性
                     # 读取时根据 person_num_selector 只读取前 n 个音频
+                    # 需要返回 gen_time 以匹配 outputs，避免缓存问题
                     return (
                         image, prompt, person_num, audio_mode,
                         audio1, audio2, audio3, gen_time
@@ -608,12 +609,12 @@ def run_graio_demo(args):
                 
                 examples_component = gr.Examples(
                     examples = [
-                        ["./input_example/images/1p-0.png", "The man stands in the dusty western street, backlit by the setting sun, and his determined gaze speaks of a rugged spirit.", "1 Person", "pad", "./input_example/audios/1p-0.wav", None, None, "~4 minutes"],
-                        ["./input_example/images/2p-0.png", "The two people are talking to each other.", "2 Persons", "pad", "./input_example/audios/2p-0-left.wav", "./input_example/audios/2p-0-right.wav", None, "~10 minutes"],
-                        ["./input_example/images/2p-1.png", "In a casual, intimate setting, a man and a woman are engaged in a heartfelt conversation inside a car. The man, sporting a denim jacket over a blue shirt, sits attentively with a seatbelt fastened, his gaze fixed on the woman beside him. The woman, wearing a black tank top and a denim jacket draped over her shoulders, smiles warmly, her eyes reflecting genuine interest and connection. The car's interior, with its beige seats and simple design, provides a backdrop that emphasizes their interaction. The scene captures a moment of shared understanding and connection, set against the soft, diffused light of an overcast day. A medium shot from a slightly angled perspective, focusing on their expressions and body language.", "2 Persons", "pad", "./input_example/audios/2p-1-left.wav", "./input_example/audios/2p-1-right.wav", None, "~6 minutes"],
-                        ["./input_example/images/2p-2.png", "In a cozy recording studio, a man and a woman are singing together. The man, with tousled brown hair, stands to the left, wearing a light green button-down shirt. His gaze is directed towards the woman, who is smiling warmly. She, with wavy dark hair, is dressed in a black floral dress and stands to the right, her eyes closed in enjoyment. Between them is a professional microphone, capturing their harmonious voices. The background features wooden panels and various audio equipment, creating an intimate and focused atmosphere. The lighting is soft and warm, highlighting their expressions and the intimate setting. A medium shot captures their interaction closely.", "2 Persons", "pad", "./input_example/audios/2p-2-left.wav", "./input_example/audios/2p-2-right.wav", None, "~8 minutes"],
+                        ["./input_example/images/1p-0.png", "~4 minutes", "The man stands in the dusty western street, backlit by the setting sun, and his determined gaze speaks of a rugged spirit.", "1 Person", "pad", "./input_example/audios/1p-0.wav", None, None],
+                        ["./input_example/images/2p-0.png", "~10 minutes", "The two people are talking to each other.", "2 Persons", "pad", "./input_example/audios/2p-0-left.wav", "./input_example/audios/2p-0-right.wav", None],
+                        ["./input_example/images/2p-1.png", "~6 minutes", "In a casual, intimate setting, a man and a woman are engaged in a heartfelt conversation inside a car. The man, sporting a denim jacket over a blue shirt, sits attentively with a seatbelt fastened, his gaze fixed on the woman beside him. The woman, wearing a black tank top and a denim jacket draped over her shoulders, smiles warmly, her eyes reflecting genuine interest and connection. The car's interior, with its beige seats and simple design, provides a backdrop that emphasizes their interaction. The scene captures a moment of shared understanding and connection, set against the soft, diffused light of an overcast day. A medium shot from a slightly angled perspective, focusing on their expressions and body language.", "2 Persons", "pad", "./input_example/audios/2p-1-left.wav", "./input_example/audios/2p-1-right.wav", None],
+                        ["./input_example/images/2p-2.png", "~8 minutes", "In a cozy recording studio, a man and a woman are singing together. The man, with tousled brown hair, stands to the left, wearing a light green button-down shirt. His gaze is directed towards the woman, who is smiling warmly. She, with wavy dark hair, is dressed in a black floral dress and stands to the right, her eyes closed in enjoyment. Between them is a professional microphone, capturing their harmonious voices. The background features wooden panels and various audio equipment, creating an intimate and focused atmosphere. The lighting is soft and warm, highlighting their expressions and the intimate setting. A medium shot captures their interaction closely.", "2 Persons", "pad", "./input_example/audios/2p-2-left.wav", "./input_example/audios/2p-2-right.wav", None],
                     ],
-                    inputs = [img2vid_image, img2vid_prompt, person_num_selector, audio_mode_selector, img2vid_audio_1, img2vid_audio_2, img2vid_audio_3, generation_time_display],
+                    inputs = [img2vid_image, generation_time_display, img2vid_prompt, person_num_selector, audio_mode_selector, img2vid_audio_1, img2vid_audio_2, img2vid_audio_3],
                     outputs = [img2vid_image, img2vid_prompt, person_num_selector, audio_mode_selector, img2vid_audio_1, img2vid_audio_2, img2vid_audio_3, generation_time_display],
                     fn=handle_example_select,
                 )
