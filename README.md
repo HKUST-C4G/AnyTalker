@@ -46,12 +46,11 @@
 </table>
 
 ## 🔥 Latest News
-🔥 *Nov 28, 2025:* We release the **AnyTalker** [weights](#), [inference code](#), and [project page](https://hkust-c4g.github.io/AnyTalker-homepage).
+🤗 *Dec 5, 2025:* We release the [gradio demo](https://github.com/HKUST-C4G/AnyTalker?tab=readme-ov-file#Gradio-Demo). 
 
 📖 *Dec 1, 2025:* We release the [technical report](https://arxiv.org/abs/2511.23475).
 
-🤗 *Dec 5, 2025:* We release the [gradio demo](https://github.com/HKUST-C4G/AnyTalker?tab=readme-ov-file#Gradio-Demo). 
-
+🔥 *Nov 28, 2025:* We release the **AnyTalker** [weights](#), [inference code](#), and [project page](https://hkust-c4g.github.io/AnyTalker-homepage).
 
 
 ## 📑 Todo List
