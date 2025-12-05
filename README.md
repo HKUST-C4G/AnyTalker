@@ -11,6 +11,7 @@
 
 <a href='https://hkust-c4g.github.io/AnyTalker-homepage/'><img src='https://img.shields.io/badge/Project-Page-green'></a>
 <a href='https://arxiv.org/abs/2511.23475/'><img src='https://img.shields.io/badge/Technique-Report-red'></a>
+<a href="https://huggingface.co/spaces/C4G-HKUST/AnyTalker" target="_blank"><img src="https://img.shields.io/badge/🤗 Hugging Face-Spaces-blue" alt="HF space"></a>&nbsp;
 <a href='https://huggingface.co/zzz66/AnyTalker-1.3B/tree/main'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-blue'></a>
 </div>
 
@@ -46,7 +47,7 @@
 </table>
 
 ## 🔥 Latest News
-🤗 *Dec 5, 2025:* We release the [gradio demo](https://github.com/HKUST-C4G/AnyTalker?tab=readme-ov-file#Gradio-Demo). 
+🤗 *Dec 5, 2025:* We release the [gradio demo](https://huggingface.co/spaces/C4G-HKUST/AnyTalker). 
 
 📖 *Dec 1, 2025:* We release the [technical report](https://arxiv.org/abs/2511.23475).
 
@@ -174,16 +175,21 @@ sh infer_a2v_1_3B_batch.sh
 --offload_model: Whether to offload the model to CPU after each model forward, reducing GPU memory usage.
 --det_thresh: detection threshold for the InsightFace model; a lower value improves performance on abstract-style images.
 --sample_guide_scale: recommended value is 4.5; applied to both text and audio.
---mode: select "pad" if every audio input track has already been zero-padded to a common length; select "concat" if you instead want the script to chain each speaker’s clips together and then zero-pad the non-speaker segments to reach a uniform length.
+--mode: select "pad" if every audio input track has already been zero-padded to a common length; select "concat" if you instead want the script to chain each speaker's clips together and then zero-pad the non-speaker segments to reach a uniform length.
 --use_half: Whether to enable half-precision (FP16) inference for faster acceleration.
 ```
 
 <p align="center">
   <img src="assets/pad.png"><br>
-  Illustration of “pad” mode for audio inputs.
+  Illustration of "pad" mode for audio inputs.
 </p> 
 
-### Gradio Demo
+**Audio Binding Order:**
+- Audio inputs are bound to persons based on their positions in the input image, from **left to right**.
+- Person 1 corresponds to the leftmost person, Person 2 to the middle person (if any), and Person 3 to the rightmost person (if any).
+
+
+### Gradio Demo (local)
 You can customize your inputs and parameters via the web interface by running the following command:
 ```sh
 python app.py

@@ -495,26 +495,6 @@ def run_graio_demo(args):
         logging.info("Finished.")
         return output_file
 
-    def toggle_audio_inputs(person_num):
-        """根据选择的人数显示对应数量的音频输入框"""
-        if person_num == "1 Person":
-            return [
-                gr.Audio(visible=True, interactive=True),
-                gr.Audio(visible=False, interactive=False),
-                gr.Audio(visible=False, interactive=False)
-            ]
-        elif person_num == "2 Persons":
-            return [
-                gr.Audio(visible=True, interactive=True),
-                gr.Audio(visible=True, interactive=True),
-                gr.Audio(visible=False, interactive=False)
-            ]
-        else:  # 3 Persons
-            return [
-                gr.Audio(visible=True, interactive=True),
-                gr.Audio(visible=True, interactive=True),
-                gr.Audio(visible=True, interactive=True)
-            ]
             
         
     with gr.Blocks() as demo:
@@ -564,14 +544,15 @@ def run_graio_demo(args):
                     - **pad**: Select this if every audio input track has already been zero-padded to a common length.
                     - **concat**: Select this if you want the script to chain each speaker's clips together and then zero-pad the non-speaker segments to reach a uniform length.
                     """)
-                    img2vid_audio_1 = gr.Audio(label="Audio for Person 1", type="filepath", visible=True)
-                    img2vid_audio_2 = gr.Audio(label="Audio for Person 2", type="filepath", visible=False)
-                    img2vid_audio_3 = gr.Audio(label="Audio for Person 3", type="filepath", visible=False)
-                    person_num_selector.change(
-                        fn=toggle_audio_inputs,
-                        inputs=person_num_selector,
-                        outputs=[img2vid_audio_1, img2vid_audio_2, img2vid_audio_3]
-                    )
+                    gr.Markdown("""
+                    **Audio Binding Order:**
+                    - Audio inputs are bound to persons based on their positions in the input image, from **left to right**.
+                    - Person 1 corresponds to the leftmost person, Person 2 to the middle person (if any), and Person 3 to the rightmost person (if any).
+                    """)
+                    # 三个音频输入框始终可见，读取时根据 person_num_selector 只读取前 n 个
+                    img2vid_audio_1 = gr.Audio(label="Audio for Person 1 (Leftmost)", type="filepath", visible=True)
+                    img2vid_audio_2 = gr.Audio(label="Audio for Person 2 (Middle)", type="filepath", visible=True)
+                    img2vid_audio_3 = gr.Audio(label="Audio for Person 3 (Rightmost)", type="filepath", visible=True)
 
                 with gr.Accordion("Advanced Options", open=False):
                     with gr.Row():
@@ -607,14 +588,34 @@ def run_graio_demo(args):
                 result_gallery = gr.Video(
                     label='Generated Video', interactive=False, height=600, )
                 
-                gr.Examples(
+                gr.Markdown("""
+                ### Example Cases
+                
+                *Note: Generation time (tested on NVIDIA H200 GPU) may vary depending on GPU specifications and system load.*
+                """)
+                
+                # 隐藏的文本组件用于在 Examples 表格中显示生成耗时
+                generation_time_display = gr.Textbox(label="Generation Time (H200 GPU)", visible=True, interactive=False)
+                
+                # 创建一个函数来处理 examples 选择，同时更新音频输入框的可见性
+                def handle_example_select(image, prompt, person_num, audio_mode, audio1, audio2, audio3, gen_time):
+                    # 三个音频输入框始终可见，只返回值，不改变可见性
+                    # 读取时根据 person_num_selector 只读取前 n 个音频
+                    return (
+                        image, prompt, person_num, audio_mode,
+                        audio1, audio2, audio3, gen_time
+                    )
+                
+                examples_component = gr.Examples(
                     examples = [
-                        ["./input_example/images/1p-0.png", "The man stands in the dusty western street, backlit by the setting sun, and his determined gaze speaks of a rugged spirit.", "1 Person", "pad", "./input_example/audios/1p-0.wav", None, None],
-                        ["./input_example/images/2p-0.png", "The two people are talking to each other.", "2 Persons", "pad", "./input_example/audios/2p-0-left.wav", "./input_example/audios/2p-0-right.wav", None],
-                        ["./input_example/images/2p-1.png", "In a casual, intimate setting, a man and a woman are engaged in a heartfelt conversation inside a car. The man, sporting a denim jacket over a blue shirt, sits attentively with a seatbelt fastened, his gaze fixed on the woman beside him. The woman, wearing a black tank top and a denim jacket draped over her shoulders, smiles warmly, her eyes reflecting genuine interest and connection. The car's interior, with its beige seats and simple design, provides a backdrop that emphasizes their interaction. The scene captures a moment of shared understanding and connection, set against the soft, diffused light of an overcast day. A medium shot from a slightly angled perspective, focusing on their expressions and body language.", "2 Persons", "pad", "./input_example/audios/2p-1-left.wav", "./input_example/audios/2p-1-right.wav", None],
-                        ["./input_example/images/2p-2.png", "In a cozy recording studio, a man and a woman are singing together. The man, with tousled brown hair, stands to the left, wearing a light green button-down shirt. His gaze is directed towards the woman, who is smiling warmly. She, with wavy dark hair, is dressed in a black floral dress and stands to the right, her eyes closed in enjoyment. Between them is a professional microphone, capturing their harmonious voices. The background features wooden panels and various audio equipment, creating an intimate and focused atmosphere. The lighting is soft and warm, highlighting their expressions and the intimate setting. A medium shot captures their interaction closely.", "2 Persons", "pad", "./input_example/audios/2p-2-left.wav", "./input_example/audios/2p-2-right.wav", None],
+                        ["./input_example/images/1p-0.png", "The man stands in the dusty western street, backlit by the setting sun, and his determined gaze speaks of a rugged spirit.", "1 Person", "pad", "./input_example/audios/1p-0.wav", None, None, "~4 minutes"],
+                        ["./input_example/images/2p-0.png", "The two people are talking to each other.", "2 Persons", "pad", "./input_example/audios/2p-0-left.wav", "./input_example/audios/2p-0-right.wav", None, "~10 minutes"],
+                        ["./input_example/images/2p-1.png", "In a casual, intimate setting, a man and a woman are engaged in a heartfelt conversation inside a car. The man, sporting a denim jacket over a blue shirt, sits attentively with a seatbelt fastened, his gaze fixed on the woman beside him. The woman, wearing a black tank top and a denim jacket draped over her shoulders, smiles warmly, her eyes reflecting genuine interest and connection. The car's interior, with its beige seats and simple design, provides a backdrop that emphasizes their interaction. The scene captures a moment of shared understanding and connection, set against the soft, diffused light of an overcast day. A medium shot from a slightly angled perspective, focusing on their expressions and body language.", "2 Persons", "pad", "./input_example/audios/2p-1-left.wav", "./input_example/audios/2p-1-right.wav", None, "~6 minutes"],
+                        ["./input_example/images/2p-2.png", "In a cozy recording studio, a man and a woman are singing together. The man, with tousled brown hair, stands to the left, wearing a light green button-down shirt. His gaze is directed towards the woman, who is smiling warmly. She, with wavy dark hair, is dressed in a black floral dress and stands to the right, her eyes closed in enjoyment. Between them is a professional microphone, capturing their harmonious voices. The background features wooden panels and various audio equipment, creating an intimate and focused atmosphere. The lighting is soft and warm, highlighting their expressions and the intimate setting. A medium shot captures their interaction closely.", "2 Persons", "pad", "./input_example/audios/2p-2-left.wav", "./input_example/audios/2p-2-right.wav", None, "~8 minutes"],
                     ],
-                    inputs = [img2vid_image, img2vid_prompt, person_num_selector, audio_mode_selector, img2vid_audio_1, img2vid_audio_2, img2vid_audio_3],
+                    inputs = [img2vid_image, img2vid_prompt, person_num_selector, audio_mode_selector, img2vid_audio_1, img2vid_audio_2, img2vid_audio_3, generation_time_display],
+                    outputs = [img2vid_image, img2vid_prompt, person_num_selector, audio_mode_selector, img2vid_audio_1, img2vid_audio_2, img2vid_audio_3, generation_time_display],
+                    fn=handle_example_select,
                 )
 
 
