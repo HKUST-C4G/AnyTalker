@@ -59,7 +59,7 @@
 - [x] 1.3B stage 1 checkpoint (trained exclusively on single-person data)
 - [x] Benchmark for evaluate Interactivity 
 - [x] Technical report 
-- [x] Gradio Demo
+- [x] Gradio demo
 - [ ] 14B model (coming soon to the [Video Rebirth](https://www.videorebirth.com/)'s creation platform)
 
 ## Quick Start

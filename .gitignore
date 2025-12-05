@@ -77,3 +77,4 @@ output
 benchmark/frames
 benchmark/videos
 gradio_temp
+save_audio
