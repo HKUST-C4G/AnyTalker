@@ -208,7 +208,7 @@ We provide the benchmark used in our paper to evaluate *Interactivity*, includin
 ```sh
 python -m pip install -U yt-dlp
 ```
-#### 2. Run the downlaod script
+#### 2. Run the download script
 ```sh
 cd ./benchmark
 python download.py
