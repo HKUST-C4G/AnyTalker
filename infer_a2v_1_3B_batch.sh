@@ -8,6 +8,7 @@ python generate_a2v_batch_multiID.py \
 		--batch_output="./outputs" \
 		--post_trained_checkpoint_path="./checkpoints/AnyTalker/1_3B-single-v1.pth" \
 		--sample_fps=24 \
+		--sample_steps=20 \
 		--sample_guide_scale=4.5 \
 		--offload_model=True \
 		--base_seed=44 \

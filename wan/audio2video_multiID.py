@@ -5,6 +5,7 @@ import math
 import os
 import random
 import sys
+import time
 from contextlib import contextmanager
 
 import numpy as np
@@ -130,14 +131,29 @@ class WanAF2V:
                 # config_dict = json.load(open(os.path.join(checkpoint_dir, 'config.json')))
                 config_dict = dit_config
                 
+                init_start = time.time()
                 self.model = WanModel.from_config(config_dict)
+                if rank == 0:
+                    print(f"WanModel initialized in {time.time() - init_start:.1f}s")
                 # All cards directly load safetensors
                 #model_state = load_file(post_trained_checkpoint_path)
-                checkpoint = torch.load(post_trained_checkpoint_path, map_location='cpu', weights_only=True)
+                load_start = time.time()
+                checkpoint = torch.load(
+                    post_trained_checkpoint_path,
+                    map_location='cpu',
+                    weights_only=True,
+                    mmap=True,
+                )
                 model_state = checkpoint['model']
-                self.model.load_state_dict(model_state)
+                self.model.load_state_dict(model_state, assign=True)
+                del checkpoint, model_state
+                if self.use_half:
+                    cast_start = time.time()
+                    self.model.to(dtype=self.half_dtype)
+                    if rank == 0:
+                        print(f"Checkpoint cast to {self.half_dtype} on CPU in {time.time() - cast_start:.1f}s")
                 if rank == 0:
-                    print(f"safertensors have been loaded: {post_trained_checkpoint_path}")
+                    print(f"Checkpoint loaded in {time.time() - load_start:.1f}s: {post_trained_checkpoint_path}")
             except Exception as e:
                 if rank == 0:
                     print(f"Error loading post-trained model: {e}")
@@ -161,18 +177,23 @@ class WanAF2V:
 
 
         if not init_on_cpu:
-            self.model.to(self.device)
-            # If half precision is enabled, convert model to half precision
-            if use_half:
-                try:
-                    self.model = self.model.to(dtype=self.half_dtype)
-                    logging.info(f"Model converted to {self.half_dtype} precision")
-                except Exception as e:
-                    logging.warning(f"Failed to convert model to half precision: {e}. Continuing with float32.")
-                    self.use_half = False
-                    self.half_dtype = torch.float32
+            self._move_model_to_device()
 
         self.sample_neg_prompt = config.sample_neg_prompt
+
+    def _move_model_to_device(self):
+        if self.use_half:
+            try:
+                self.model.to(device=self.device, dtype=self.half_dtype)
+                first_param = next(self.model.parameters())
+                logging.info(f"Model moved to {self.device} with {first_param.dtype} precision")
+            except Exception as e:
+                logging.warning(f"Failed to move model with half precision: {e}. Continuing with float32.")
+                self.use_half = False
+                self.half_dtype = torch.float32
+                self.model.to(self.device)
+        else:
+            self.model.to(self.device)
 
     def generate(
         self,
@@ -195,6 +216,7 @@ class WanAF2V:
         audio_paths=None, # New: audio path list, supports multiple audio files
         task_key=None,
         mode="pad",  # Audio processing mode: "pad" or "concat"
+        audio_output_dir=None,
     ):
         r"""
         Generates video frames from input image and text prompt using diffusion process.
@@ -227,6 +249,8 @@ class WanAF2V:
                 Whether to use adaptive CFG-Zero guidance instead of fixed guidance scale
             zero_init_steps (`int`, *optional*, defaults to 0):
                 Number of initial steps to use zero guidance when using cfg_zero
+            audio_output_dir (`str`, *optional*):
+                Directory for cached audio preprocessing outputs. If not set, use config.audio_output_dir.
 
         Returns:
             torch.Tensor:
@@ -493,6 +517,9 @@ class WanAF2V:
         else:
             y = torch.concat([msk, y])
 
+        audio_output_dir = audio_output_dir or self.config.audio_output_dir
+        print(f"Using audio preprocessing output directory: {audio_output_dir}")
+
         # Process multiple audio files using utility function
         audio_feat_list = process_audio_features(
             audio_paths=audio_paths,
@@ -504,7 +531,7 @@ class WanAF2V:
             fps=self.config.fps,
             wav2vec_model=self.config.wav2vec,
             vocal_separator_model=self.config.vocal_separator_path,
-            audio_output_dir=self.config.audio_output_dir,
+            audio_output_dir=audio_output_dir,
             device=self.device,
             use_half=self.use_half,
             half_dtype=self.half_dtype,
@@ -596,7 +623,7 @@ class WanAF2V:
             if offload_model:
                 torch.cuda.empty_cache()
 
-            self.model.to(self.device)
+            self._move_model_to_device()
             masks_flattened = False # Set to False for first time
            
             for i, t in enumerate(tqdm(timesteps)):

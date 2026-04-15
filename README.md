@@ -3,7 +3,7 @@
 
 <h1>AnyTalker: Scaling Multi-Person Talking Video Generation with Interactivity Refinement</h1>
 
-[Zhizhou Zhong](https://scholar.google.com/citations?user=t88nyvsAAAAJ ) · [Yicheng Ji](https://github.com/zju-jiyicheng) · [Zhe Kong](https://kongzhecn.github.io) · [Yiying Liu*](https://openreview.net/profile?id=~YiYing_Liu1) ·  [Jiarui Wang](https://scholar.google.com/citations?user=g7I2bJ8AAAAJ) · [Jiasun Feng](https://scholar.google.com/citations?hl=zh-CN&user=MGHcudEAAAAJ) ·  [Lupeng Liu](https://openreview.net/profile?id=~Lupeng_Liu2)  · [Xiangyi Wang](https://openreview.net/profile?id=~Xiangyi_Wang6 )  · [Yanjia Li](https://openreview.net/profile?id=~Yanjia_Li1)  · [Yuqing She](https://openreview.net/profile?id=~Yuqing_She1)  · [Ying Qin](https://scholar.google.com/citations?user=6KwG7hYAAAAJ) · [Huan Li](https://scholar.google.com/citations?user=fZoYJz8AAAAJ ) · [Shuiyang Mao](https://scholar.google.com/citations?user=YZSd5fsAAAAJ) · [Wei Liu](https://scholar.google.com/citations?user=AjxoEpIAAAAJ) · [Wenhan Luo](https://whluo.github.io/)<sup>&#9993;</sup>
+[Zhizhou Zhong](https://scholar.google.com/citations?user=t88nyvsAAAAJ ) · [Yicheng Ji](https://scholar.google.com/citations?user=mbbcLoMAAAAJ&hl) · [Zhe Kong](https://kongzhecn.github.io) · [Yiying Liu*](https://openreview.net/profile?id=~YiYing_Liu1) ·  [Jiarui Wang](https://scholar.google.com/citations?user=g7I2bJ8AAAAJ) · [Jiasun Feng](https://scholar.google.com/citations?hl=zh-CN&user=MGHcudEAAAAJ) ·  [Lupeng Liu](https://openreview.net/profile?id=~Lupeng_Liu2)  · [Xiangyi Wang](https://openreview.net/profile?id=~Xiangyi_Wang6 )  · [Yanjia Li](https://openreview.net/profile?id=~Yanjia_Li1)  · [Yuqing She](https://openreview.net/profile?id=~Yuqing_She1)  · [Ying Qin](https://scholar.google.com/citations?user=6KwG7hYAAAAJ) · [Huan Li](https://scholar.google.com/citations?user=fZoYJz8AAAAJ ) · [Shuiyang Mao](https://scholar.google.com/citations?user=YZSd5fsAAAAJ) · [Wei Liu](https://scholar.google.com/citations?user=AjxoEpIAAAAJ) · [Wenhan Luo](https://whluo.github.io/)<sup>&#9993;</sup>
 
 <sup>*</sup>Project Leader
 <sup>&#9993;</sup>Corresponding Author
@@ -47,6 +47,8 @@
 </table>
 
 ## 🔥 Latest News
+🚀 *Apr 15, 2026:* We release the 14B multi-person checkpoint.
+
 🤗 *Dec 5, 2025:* We release the [gradio demo](https://huggingface.co/spaces/C4G-HKUST/AnyTalker). 
 
 📖 *Dec 1, 2025:* We release the [technical report](https://arxiv.org/abs/2511.23475).
@@ -57,10 +59,10 @@
 ## 📑 Todo List
 - [x] Inference code
 - [x] 1.3B stage 1 checkpoint (trained exclusively on single-person data)
-- [x] Benchmark for evaluate Interactivity 
+- [x] 14B multi-person checkpoint
+- [x] Benchmark for evaluating interactivity 
 - [x] Technical report 
 - [x] Gradio demo
-- [ ] 14B model (coming soon to the [Video Rebirth](https://www.videorebirth.com/)'s creation platform)
 
 ## Quick Start
 
@@ -123,7 +125,7 @@ conda install -c conda-forge ffmpeg
 | --------------|-------------------------------------------------------------------------------|-------------------------------|
 | Wan2.1-Fun-V1.1-1.3B-InP  |      🤗 [Huggingface](https://huggingface.co/alibaba-pai/Wan2.1-Fun-V1.1-1.3B-InP)       | Base model
 | wav2vec2-base |      🤗 [Huggingface](https://huggingface.co/facebook/wav2vec2-base-960h)          | Audio encoder
-| AnyTalker-1.3B      |      🤗 [Huggingface](https://huggingface.co/zzz66/AnyTalker-1.3B)              | Our weights
+| AnyTalker      |      🤗 [Huggingface](https://huggingface.co/zzz66/AnyTalker-1.3B)              | Our 1.3B and 14B weights
 
 Download models using huggingface-cli:
 ``` sh
@@ -132,20 +134,27 @@ hf download alibaba-pai/Wan2.1-Fun-V1.1-1.3B-InP --local-dir ./checkpoints/Wan2.
 hf download facebook/wav2vec2-base-960h --local-dir ./checkpoints/wav2vec2-base-960h
 hf download zzz66/AnyTalker-1.3B --local-dir ./checkpoints/AnyTalker
 ```
-The directory shoube be organized as follows.
+
+The 14B AnyTalker checkpoint reuses the shared T5, VAE, CLIP, and tokenizer files from `Wan2.1-Fun-1.3B-Inp`; no extra base-model download is required.
+
+The directory should be organized as follows.
 
 ```
 checkpoints/
-├── Wan2.1-Fun-V1.1-1.3B-InP
+├── Wan2.1-Fun-1.3B-Inp
 ├── wav2vec2-base-960h
 └── AnyTalker
+    ├── 1_3B-single-v1.pth
+    ├── 14B-multi-v1.pth
+    ├── config_af2v_1_3B.json
+    └── config_af2v_14B.json
 ``` 
 
 
 ### 🔑 Quick Inference
 The provided script currently performs 480p inference on a single GPU and automatically switches between single-person and multi-person generation modes according to the length of the [input audio list](./input_example/customize_your_input_here.json).
 
-
+#### 1.3B inference
 ```sh
 #!/bin/bash
 export CUDA_VISIBLE_DEVICES=0
@@ -154,29 +163,56 @@ python generate_a2v_batch_multiID.py \
 		--task="a2v-1.3B" \
 		--size="832*480" \
 		--batch_gen_json="./input_example/customize_your_input_here.json" \
-		--batch_output="./outputs" \
+		--batch_output="./outputs_1_3B" \
 		--post_trained_checkpoint_path="./checkpoints/AnyTalker/1_3B-single-v1.pth" \
 		--sample_fps=24 \
+		--sample_steps=40 \
 		--sample_guide_scale=4.5 \
 		--offload_model=True \
 		--base_seed=44 \
 		--dit_config="./checkpoints/AnyTalker/config_af2v_1_3B.json" \
 		--det_thresh=0.15 \
 		--mode="pad" \
-		--use_half=True 
+		--use_half=False
 ```
 or 
 ```bash
 sh infer_a2v_1_3B_batch.sh
 ```
 
+#### 14B inference
+```sh
+#!/bin/bash
+export CUDA_VISIBLE_DEVICES=0
+python generate_a2v_batch_multiID.py \
+		--ckpt_dir="./checkpoints/Wan2.1-Fun-1.3B-Inp" \
+		--task="a2v-14B" \
+		--size="832*480" \
+		--batch_gen_json="./input_example/customize_your_input_here.json" \
+		--batch_output="./outputs_14B" \
+		--post_trained_checkpoint_path="./checkpoints/AnyTalker/14B-multi-v1.pth" \
+		--sample_fps=24 \
+		--sample_steps=20 \
+		--sample_guide_scale=4.5 \
+		--offload_model=True \
+		--base_seed=44 \
+		--dit_config="./checkpoints/AnyTalker/config_af2v_14B.json" \
+		--det_thresh=0.15 \
+		--mode="pad" \
+		--use_half=True
+```
+
+> **Note:** 14B inference requires a GPU with at least 80GB of VRAM. Keep `--use_half=True` enabled for the recommended memory footprint.
+
 #### Descriptions on some hyper-parameters
 ```
 --offload_model: Whether to offload the model to CPU after each model forward, reducing GPU memory usage.
 --det_thresh: detection threshold for the InsightFace model; a lower value improves performance on abstract-style images.
+--sample_steps: number of denoising steps during sampling. The default is 20 for faster inference.
 --sample_guide_scale: recommended value is 4.5; applied to both text and audio.
+--batch_output: directory for generated videos. Audio preprocessing cache is saved under <batch_output>/audio_preprocess.
 --mode: select "pad" if every audio input track has already been zero-padded to a common length; select "concat" if you instead want the script to chain each speaker's clips together and then zero-pad the non-speaker segments to reach a uniform length.
---use_half: Whether to enable half-precision (FP16) inference for faster acceleration.
+--use_half: Whether to enable half-precision (FP16) inference. It converts the DiT model and related tensors to FP16 during inference, which can speed up generation and reduce GPU memory usage. If you observe numerical instability or want full precision behavior, set it to False.
 ```
 
 <p align="center">
@@ -213,7 +249,7 @@ python -m pip install -U yt-dlp
 cd ./benchmark
 python download.py
 ```
-The directory shoube be organized as follows.
+The directory should be organized as follows.
 
 ```
 benchmark/

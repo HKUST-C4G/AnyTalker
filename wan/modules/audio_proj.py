@@ -51,6 +51,60 @@ class AudioProjModel(ModelMixin, ConfigMixin):
         return context_tokens
 
 
+class LegacyAudioProjModel(ModelMixin, ConfigMixin):
+    def __init__(
+        self,
+        seq_len=5,
+        seq_len_vf=8,
+        blocks=12,
+        channels=768,
+        intermediate_dim=512,
+        output_dim=768,
+        context_tokens=32,
+        norm_output_audio=False,
+    ):
+        super().__init__()
+
+        self.seq_len = seq_len
+        self.blocks = blocks
+        self.channels = channels
+        self.input_dim = seq_len * blocks * channels
+        self.input_dim_vf = seq_len_vf * blocks * channels
+        self.intermediate_dim = intermediate_dim
+        self.context_tokens = context_tokens
+        self.output_dim = output_dim
+
+        self.proj1 = nn.Linear(self.input_dim, intermediate_dim)
+        self.proj1_vf = nn.Linear(self.input_dim_vf, intermediate_dim)
+        self.proj2 = nn.Linear(intermediate_dim, intermediate_dim)
+        self.proj3 = nn.Linear(intermediate_dim, context_tokens * output_dim)
+        self.norm = nn.LayerNorm(output_dim) if norm_output_audio else nn.Identity()
+
+    def forward(self, audio_embeds, audio_embeds_vf):
+        video_length = audio_embeds.shape[1] + audio_embeds_vf.shape[1]
+        batch_size = audio_embeds.shape[0]
+
+        audio_embeds = rearrange(audio_embeds, "bz f w b c -> (bz f) w b c")
+        audio_embeds = audio_embeds.reshape(audio_embeds.shape[0], -1)
+
+        audio_embeds_vf = rearrange(audio_embeds_vf, "bz f w b c -> (bz f) w b c")
+        audio_embeds_vf = audio_embeds_vf.reshape(audio_embeds_vf.shape[0], -1)
+
+        audio_embeds = torch.relu(self.proj1(audio_embeds))
+        audio_embeds_vf = torch.relu(self.proj1_vf(audio_embeds_vf))
+        audio_embeds = rearrange(audio_embeds, "(bz f) c -> bz f c", bz=batch_size)
+        audio_embeds_vf = rearrange(audio_embeds_vf, "(bz f) c -> bz f c", bz=batch_size)
+        audio_embeds = torch.cat([audio_embeds, audio_embeds_vf], dim=1)
+
+        audio_embeds = audio_embeds.reshape(audio_embeds.shape[0] * audio_embeds.shape[1], -1)
+        audio_embeds = torch.relu(self.proj2(audio_embeds))
+        context_tokens = self.proj3(audio_embeds).reshape(
+            audio_embeds.shape[0], self.context_tokens, self.output_dim
+        )
+        context_tokens = self.norm(context_tokens)
+        return rearrange(context_tokens, "(bz f) m c -> bz f m c", f=video_length)
+
+
 class PeriodicPositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, period=25, max_seq_len=600):
         super(PeriodicPositionalEncoding, self).__init__()

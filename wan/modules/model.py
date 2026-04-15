@@ -10,7 +10,7 @@ from diffusers.models.modeling_utils import ModelMixin
 from .attention import flash_attention, attention
 from torch.utils.checkpoint import checkpoint
 from einops import rearrange
-from .audio_proj import AudioProjModel
+from .audio_proj import AudioProjModel, LegacyAudioProjModel
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -211,8 +211,12 @@ class WanI2VCrossAttention(WanSelfAttention):
             context(Tensor): Shape [B, L2, C]
             context_lens(Tensor): Shape [B]
         """
-        context_img = context[:, :257]
-        context = context[:, 257:]
+        if isinstance(context, list):
+            context_img = context[1]
+            context = context[0]
+        else:
+            context_img = context[:, :257]
+            context = context[:, 257:]
         b, n, d = x.size(0), self.num_heads, self.head_dim
 
         # compute query, key, value
@@ -462,6 +466,124 @@ class WanAF2VCrossAttention(WanSelfAttention):
         return x
 
 
+class LegacyA2VCrossAttention(nn.Module):
+    def __init__(
+        self,
+        dim,
+        num_heads,
+        qk_norm=True,
+        eps=1e-6,
+        encoder_hidden_states_dim=768,
+        qkv_bias=True,
+        norm_layer=None,
+        attn_drop=0.0,
+        proj_drop=0.0,
+        use_concat_attention=True,
+    ):
+        super().__init__()
+        assert dim % num_heads == 0
+        self.dim = dim
+        self.encoder_hidden_states_dim = encoder_hidden_states_dim
+        self.num_heads = num_heads
+        self.head_dim = dim // num_heads
+        self.qk_norm = qk_norm
+        self.use_concat_attention = use_concat_attention
+
+        if norm_layer is None:
+            norm_layer = WanRMSNorm
+
+        self.q_linear = nn.Linear(dim, dim, bias=qkv_bias)
+        self.q_norm = norm_layer(self.head_dim, eps=eps) if qk_norm else nn.Identity()
+        self.k_norm = norm_layer(self.head_dim, eps=eps) if qk_norm else nn.Identity()
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+        self.kv_linear = nn.Linear(encoder_hidden_states_dim, dim * 2, bias=qkv_bias)
+        self.add_q_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
+        self.add_k_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
+
+        self.k_face = nn.Linear(dim, dim)
+        self.v_face = nn.Linear(dim, dim)
+        self.norm_k_face = norm_layer(dim, eps=eps) if qk_norm else nn.Identity()
+
+    def forward(
+        self,
+        x,
+        context,
+        context_lens,
+        temporal_mask=None,
+        face_mask_list=None,
+        use_token_mask=True,
+        shape=21,
+    ):
+        context_audios = context[2]
+        face_context_list = context[3]
+
+        if isinstance(shape, torch.Tensor):
+            length = int(shape.flatten()[0].item())
+        elif hasattr(shape, "__len__"):
+            length = int(shape[0])
+        else:
+            length = int(shape)
+
+        x_reshaped = rearrange(x, "B (L S) C -> (B L) S C", L=length)
+        batch_frames, token_count, _ = x_reshaped.shape
+        q = self.q_linear(x_reshaped)
+        q = q.view(batch_frames, token_count, self.num_heads, self.head_dim).permute(0, 2, 1, 3)
+        if self.qk_norm:
+            q = self.q_norm(q)
+        q = rearrange(q, "B H M K -> B M H K")
+
+        outputs = []
+        min_length = min(len(context_audios), len(face_context_list), len(face_mask_list or []))
+        for i in range(min_length):
+            context_audio = context_audios[i]
+            face_context = face_context_list[i]
+
+            audio_kv = self.kv_linear(context_audio)
+            audio_kv = rearrange(audio_kv, "B L S C -> (B L) S C", L=length)
+            audio_kv = audio_kv.view(
+                batch_frames, audio_kv.shape[1], 2, self.num_heads, self.head_dim
+            ).permute(2, 0, 3, 1, 4)
+            encoder_k, encoder_v = audio_kv.unbind(0)
+            if self.qk_norm:
+                encoder_k = self.add_k_norm(encoder_k)
+
+            base_batch = x.size(0)
+            face_context = face_context.unsqueeze(1).repeat(1, length, 1, 1)
+            face_context = rearrange(face_context, "b l s c -> (b l) s c")
+            face_k = self.norm_k_face(self.k_face(face_context)).view(
+                batch_frames, -1, self.num_heads, self.head_dim
+            )
+            face_v = self.v_face(face_context).view(batch_frames, -1, self.num_heads, self.head_dim)
+
+            encoder_k = rearrange(encoder_k, "B H M K -> B M H K")
+            encoder_v = rearrange(encoder_v, "B H M K -> B M H K")
+
+            if encoder_k.shape[1] > face_k.shape[1]:
+                repeat_times = (encoder_k.shape[1] + face_k.shape[1] - 1) // face_k.shape[1]
+                face_k = face_k.repeat(1, repeat_times, 1, 1)[:, : encoder_k.shape[1]]
+                face_v = face_v.repeat(1, repeat_times, 1, 1)[:, : encoder_v.shape[1]]
+
+            k = torch.cat([face_k, encoder_k], dim=1)
+            v = torch.cat([face_v, encoder_v], dim=1)
+            audio_face = flash_attention(q, k, v, k_lens=None)
+            audio_face = audio_face.flatten(2)
+            audio_face = rearrange(audio_face, "(b l) s c -> b (l s) c", b=base_batch, l=length)
+            if use_token_mask and face_mask_list is not None:
+                audio_face = audio_face * face_mask_list[i]
+            outputs.append(audio_face)
+
+        if not outputs:
+            return torch.zeros_like(x)
+
+        x = outputs[0]
+        for output in outputs[1:]:
+            x = x + output
+        return self.proj_drop(self.proj(x))
+
+
 WAN_CROSSATTENTION_CLASSES = {
     't2v_cross_attn': WanT2VCrossAttention,
     'i2v_cross_attn': WanI2VCrossAttention,
@@ -481,6 +603,9 @@ class WanAttentionBlock(nn.Module):
                  qk_norm=True,
                  cross_attn_norm=False,
                  eps=1e-6,
+                 output_dim=768,
+                 norm_input_visual=True,
+                 legacy_audio_cross_attn=False,
                  use_concat_attention=False):  # New parameter
         super().__init__()
         self.dim = dim
@@ -490,6 +615,7 @@ class WanAttentionBlock(nn.Module):
         self.qk_norm = qk_norm
         self.cross_attn_norm = cross_attn_norm
         self.eps = eps
+        self.legacy_audio_cross_attn = legacy_audio_cross_attn
 
         # layers
         self.norm1 = WanLayerNorm(dim, eps)
@@ -520,6 +646,23 @@ class WanAttentionBlock(nn.Module):
 
         # modulation
         self.modulation = nn.Parameter(torch.randn(1, 6, dim) / dim**0.5)
+
+        if self.legacy_audio_cross_attn:
+            self.audio_cross_attn = LegacyA2VCrossAttention(
+                dim=dim,
+                encoder_hidden_states_dim=output_dim,
+                num_heads=num_heads,
+                qk_norm=False,
+                qkv_bias=True,
+                eps=eps,
+                norm_layer=WanRMSNorm,
+                use_concat_attention=use_concat_attention,
+            )
+            self.norm_x = (
+                WanLayerNorm(dim, eps, elementwise_affine=True)
+                if norm_input_visual
+                else nn.Identity()
+            )
 
     def forward(
         self,
@@ -554,6 +697,21 @@ class WanAttentionBlock(nn.Module):
             freqs)
         with amp.autocast(dtype=torch.float32):
             x = x + y * e[2]
+
+        if self.legacy_audio_cross_attn:
+            x = x + self.cross_attn(self.norm3(x), context, context_lens)
+            x = x + self.audio_cross_attn(
+                self.norm_x(x),
+                context,
+                context_lens,
+                face_mask_list=face_mask_list,
+                use_token_mask=use_token_mask,
+                shape=grid_sizes[0],
+            )
+            y = self.ffn(self.norm2(x).float() * (1 + e[4]) + e[3])
+            with amp.autocast(dtype=torch.float32):
+                x = x + y * e[5]
+            return x
 
         # cross-attention & ffn function
         def cross_attn_ffn(x, context, context_lens, e, temporal_mask=None):
@@ -653,6 +811,14 @@ class WanModel(ModelMixin, ConfigMixin):
                  cross_attn_norm=True,
                  eps=1e-6,
                  temporal_align=True,
+                 legacy_audio_cross_attn=False,
+                 audio_window=5,
+                 intermediate_dim=512,
+                 audio_output_dim=768,
+                 context_tokens=32,
+                 vae_scale=4,
+                 norm_input_visual=True,
+                 norm_output_audio=True,
                  use_concat_attention=False):  # New parameter to control concat attention mode
         r"""
         Initialize the diffusion model backbone.
@@ -716,6 +882,13 @@ class WanModel(ModelMixin, ConfigMixin):
         self.cross_attn_norm = cross_attn_norm
         self.eps = eps
         self.has_temporal_align = temporal_align
+        self.use_legacy_audio_cross_attn = legacy_audio_cross_attn
+        self.audio_window = audio_window
+        self.intermediate_dim = intermediate_dim
+        self.audio_output_dim = audio_output_dim
+        self.context_tokens = context_tokens
+        self.vae_scale = vae_scale
+        self.norm_output_audio = norm_output_audio
         self.use_concat_attention = use_concat_attention  # Save new parameter
 
         # embeddings
@@ -739,10 +912,26 @@ class WanModel(ModelMixin, ConfigMixin):
 
         # blocks
         cross_attn_type = attn_type[model_type]
+        block_cross_attn_type = (
+            'i2v_cross_attn'
+            if self.use_legacy_audio_cross_attn and model_type in ['a2v', 'a2v_af']
+            else cross_attn_type
+        )
         self.blocks = nn.ModuleList([
-            WanAttentionBlock(cross_attn_type, dim, ffn_dim, num_heads,
-                              window_size, qk_norm, cross_attn_norm, eps,
-                              self.use_concat_attention)  # Pass new parameter
+            WanAttentionBlock(
+                block_cross_attn_type,
+                dim,
+                ffn_dim,
+                num_heads,
+                window_size,
+                qk_norm,
+                cross_attn_norm,
+                eps,
+                output_dim=audio_output_dim,
+                norm_input_visual=norm_input_visual,
+                legacy_audio_cross_attn=self.use_legacy_audio_cross_attn,
+                use_concat_attention=self.use_concat_attention,
+            )
             for _ in range(num_layers)
         ])
 
@@ -764,20 +953,40 @@ class WanModel(ModelMixin, ConfigMixin):
 
         elif model_type=='a2v':
             self.img_emb = MLPProj(1280, dim)
-            self.audio_emb = AudioProjModel(seq_len=5,
-                                        blocks=12, 
-                                        channels=768,
-                                        intermediate_dim=512,
-                                        output_dim=dim,
-                                        context_tokens=32,)
+            if self.use_legacy_audio_cross_attn:
+                self.audio_proj = LegacyAudioProjModel(
+                    seq_len=audio_window,
+                    seq_len_vf=audio_window + vae_scale - 1,
+                    intermediate_dim=intermediate_dim,
+                    output_dim=audio_output_dim,
+                    context_tokens=context_tokens,
+                    norm_output_audio=norm_output_audio,
+                )
+            else:
+                self.audio_emb = AudioProjModel(seq_len=5,
+                                            blocks=12,
+                                            channels=768,
+                                            intermediate_dim=512,
+                                            output_dim=dim,
+                                            context_tokens=32,)
         elif model_type=='a2v_af':
             self.img_emb = MLPProj(1280, dim)
-            self.audio_emb = AudioProjModel(seq_len=5,
-                                        blocks=12, 
-                                        channels=768,
-                                        intermediate_dim=512,
-                                        output_dim=dim,
-                                        context_tokens=32,)
+            if self.use_legacy_audio_cross_attn:
+                self.audio_proj = LegacyAudioProjModel(
+                    seq_len=audio_window,
+                    seq_len_vf=audio_window + vae_scale - 1,
+                    intermediate_dim=intermediate_dim,
+                    output_dim=audio_output_dim,
+                    context_tokens=context_tokens,
+                    norm_output_audio=norm_output_audio,
+                )
+            else:
+                self.audio_emb = AudioProjModel(seq_len=5,
+                                            blocks=12,
+                                            channels=768,
+                                            intermediate_dim=512,
+                                            output_dim=dim,
+                                            context_tokens=32,)
             self.audio_ref_emb = MLPProj(1280, dim) # Used for audio ref attention
 
         # initialize weights
@@ -881,6 +1090,7 @@ class WanModel(ModelMixin, ConfigMixin):
             ]))
 
         # print("="*25,self.model_type)
+        audio_embeding_list = []
         if self.model_type=="i2v":
             context_clip = self.img_emb(clip_fea)  # bs x 257 x dim
             context = torch.concat([context_clip, context], dim=1)
@@ -891,32 +1101,63 @@ class WanModel(ModelMixin, ConfigMixin):
                 ref_face_list = audio_ref_features["ref_face_list"]
                 audio_list = audio_ref_features["audio_list"]
          
-            # Process audio feature list
-            audio_embeding_list = []
-            for i, audio_feat in enumerate(audio_list):
-                audio_embeding = self.audio_emb(audio_feat)
-                audio_embeding_list.append(audio_embeding)
-
-            
-            # Process face feature list
-            ref_context_list = []
-            for i, ref_features in enumerate(ref_face_list):
-                audio_ref_embeding = self.audio_ref_emb(ref_features)
-                ref_context_list.append(audio_ref_embeding)
-            
-            # Original a2v required features
             context_clip = self.img_emb(clip_fea)  # bs x 257 x dim
+            ref_context_list = []
 
-            # [text, image, audio list, audio ref list]
-            context = [context]
-            context.append(context_clip)
-            context.append(audio_embeding_list)
-            context.append(ref_context_list)
+            if self.use_legacy_audio_cross_attn:
+                for audio_feat in audio_list:
+                    if len(audio_feat.shape) == 4:
+                        audio_feat = audio_feat.unsqueeze(0)
+                    audio_cond = audio_feat.to(device=x.device, dtype=x.dtype)
+                    first_frame_audio = audio_cond[:, :1, ...]
+                    latter_frame_audio = audio_cond[:, 1:, ...]
+                    latter_frame_audio = rearrange(
+                        latter_frame_audio,
+                        "b (n_t n) w s c -> b n_t n w s c",
+                        n=self.vae_scale,
+                    )
+                    middle_index = self.audio_window // 2
+                    latter_first = latter_frame_audio[:, :, :1, : middle_index + 1, ...]
+                    latter_first = rearrange(latter_first, "b n_t n w s c -> b n_t (n w) s c")
+                    latter_last = latter_frame_audio[:, :, -1:, middle_index:, ...]
+                    latter_last = rearrange(latter_last, "b n_t n w s c -> b n_t (n w) s c")
+                    latter_middle = latter_frame_audio[:, :, 1:-1, middle_index : middle_index + 1, ...]
+                    latter_middle = rearrange(latter_middle, "b n_t n w s c -> b n_t (n w) s c")
+                    latter_frame_audio = torch.cat([latter_first, latter_middle, latter_last], dim=2)
+                    audio_embeding_list.append(self.audio_proj(first_frame_audio, latter_frame_audio))
+
+                for ref_features in ref_face_list:
+                    ref_context_list.append(self.audio_ref_emb(ref_features))
+
+                context = [
+                    torch.cat([context_clip, context], dim=1),
+                    context_clip,
+                    audio_embeding_list,
+                    ref_context_list,
+                ]
+            else:
+                # Process audio feature list
+                for audio_feat in audio_list:
+                    audio_embeding = self.audio_emb(audio_feat)
+                    audio_embeding_list.append(audio_embeding)
+
+                # Process face feature list
+                for ref_features in ref_face_list:
+                    audio_ref_embeding = self.audio_ref_emb(ref_features)
+                    ref_context_list.append(audio_ref_embeding)
+
+                # [text, image, audio list, audio ref list]
+                context = [context]
+                context.append(context_clip)
+                context.append(audio_embeding_list)
+                context.append(ref_context_list)
         
         # Currently testing does not use temporal_mask
         self.has_temporal_align = True
 
-        if self.has_temporal_align and len(audio_embeding_list) > 0 and audio_embeding_list[0] is not None:
+        if self.use_legacy_audio_cross_attn:
+            temporal_mask = None
+        elif self.has_temporal_align and len(audio_embeding_list) > 0 and audio_embeding_list[0] is not None:
             # Use first audio's shape to build temporal_mask
             audio_shape = audio_embeding_list[0].shape
             temporal_mask = torch.zeros((f, audio_shape[-3]), dtype=torch.bool, device=x.device) 

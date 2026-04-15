@@ -70,7 +70,7 @@ checkpoints/
 scripts/
 logs/
 checkpoints
-output
+output*
 benchmark/frames
 benchmark/videos
 gradio_temp

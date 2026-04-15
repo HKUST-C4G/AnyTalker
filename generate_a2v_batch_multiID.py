@@ -61,12 +61,9 @@ def _validate_args(args):
     # Check that either (image and prompt) or batch_gen_dir is provided
     # batch_gen_dir related logic is deprecated, no need to validate
     
-    # The default sampling steps are 40 for image-to-video tasks and 50 for text-to-video tasks.
+    # The default sampling steps are 20 for inference.
     if args.sample_steps is None:
-        if any(key in args.task for key in ["i2v", "a2v"]):
-            args.sample_steps = 40
-        else:
-            args.sample_steps = 50
+        args.sample_steps = 20
 
     if args.sample_shift is None:
         args.sample_shift = 5.0
@@ -263,7 +260,7 @@ def _parse_args():
         "--batch_output",
         type=str,
         default=None,
-        help="Directory to save generated videos when using batch processing. If not specified, defaults to the json filename (without extension) in the same directory.")
+        help="Directory to save generated videos and cached audio preprocessing files when using batch processing. If not specified, defaults to the json filename (without extension) in the same directory.")
     parser.add_argument(
         "--dit_config",
         type=str,
@@ -371,6 +368,7 @@ def generate(args):
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
     print(f"Rank {rank}: Using output directory: {output_dir}")
+    print(f"Rank {rank}: Using audio preprocessing directory: {os.path.join(output_dir, 'audio_preprocess')}")
     
     # Check if there are tasks to process
     if len(rank_prompts) == 0:
@@ -515,6 +513,7 @@ def generate(args):
                     audio_paths=audio_paths,  # Pass complete audio path list
                     task_key=task_key,
                     mode=args.mode,  # Pass audio processing mode
+                    audio_output_dir=output_dir,
                 )
             
                 # Directly use original video, do not apply mask overlay
